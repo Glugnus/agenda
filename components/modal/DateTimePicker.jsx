@@ -15,7 +15,7 @@ import {
 } from "../../utils";
 import { colors } from "../../constants/colors";
 
-const DateTimePicker = ({ label, dateTime, setDateTime }) => {
+const DateTimePicker = ({ label, dateTime, setDateTime, error }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
   const [mode, setMode] = useState("date");
@@ -39,18 +39,24 @@ const DateTimePicker = ({ label, dateTime, setDateTime }) => {
     hideDatePicker();
   };
 
+  const dateTimeStyle = [styles.dateTime];
+
+  if (error) {
+    dateTimeStyle.push(styles.error);
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.dateAndTimeContainer}>
         <Pressable
-          style={[styles.dateContainer, styles.dateTime]}
+          style={[styles.dateContainer, dateTimeStyle]}
           onPress={showDate}
         >
           <Text>{getFormattedFullDate(dateTime)}</Text>
         </Pressable>
         <Pressable
-          style={[styles.timeContainer, styles.dateTime]}
+          style={[styles.timeContainer, dateTimeStyle]}
           onPress={showTime}
         >
           <Text>{getFormattedTime(dateTime)}</Text>
@@ -107,5 +113,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     justifyContent: "center",
     alignItems: "center",
+  },
+  error: {
+    borderColor: "red",
+    borderWidth: 3,
   },
 });
