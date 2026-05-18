@@ -27,6 +27,12 @@ import * as Yup from "yup";
 import { createEvent, deleteEvent, updateEvent } from "../../lib";
 import LoadingOverlay from "../overlay/LoadingOverlay";
 import ErrorOverlay from "../overlay/ErrorOverlay";
+import {
+  useCreateEventMutation,
+  useDeleteEventMutation,
+  useGetAllEventsQuery,
+  useUpdateEventMutation,
+} from "../../store/api/agendaApi";
 
 export default function FormWithFormik({
   isFormVisible,
@@ -34,10 +40,30 @@ export default function FormWithFormik({
   selectedEvent,
 }) {
   const closeKeyboardHandler = () => Keyboard.dismiss();
-  const event = useSelector((state) =>
-    state.agenda.events.find((event) => event.id === selectedEvent),
-  );
-  const dispatch = useDispatch();
+
+  const { data: event, error } = useGetAllEventsQuery(undefined, {
+    skip: !selectedEvent,
+    selectFromResult: ({ data, error }) => ({
+      data: data?.find((item) => item.id === selectedEvent),
+    }),
+  });
+
+  const [
+    createEvent,
+    { isLoading: isCreating, error: createError, isSuccess: isCreated },
+  ] = useCreateEventMutation();
+
+  const [
+    updateEvent,
+    { isLoading: isUpdating, error: updateError, isSuccess: isUpdated },
+  ] = useUpdateEventMutation();
+
+  const [
+    deleteEvent,
+    { isLoading: isDeleting, error: deleteError, isSuccess: isDeleted },
+  ] = useDeleteEventMutation();
+
+  // const dispatch = useDispatch();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isremoveLoading, setIsremoveLoading] = useState(false);
@@ -45,20 +71,17 @@ export default function FormWithFormik({
 
   const removeEvt = () => {
     if (event) {
-      httpEventHandler(
-        { id: event.id },
-        deleteEvent,
-        removeEvent,
-        setIsremoveLoading,
-      );
+      deleteEvent({ id: event.id });
     } else {
-      closeFormHandler();
+      closeForm();
     }
   };
 
-  const closeFormHandler = () => {
-    closeForm();
-  };
+  useEffect(() => {
+    if (isCreated || isUpdated || isDeleted) {
+      closeForm();
+    }
+  }, [isCreated, isUpdated, isDeleted]);
 
   const initialState = event
     ? event
@@ -93,25 +116,25 @@ export default function FormWithFormik({
     isOnline: Yup.boolean(),
   });
 
-  const httpEventHandler = async (data, httpFn, reducer, setLoadingState) => {
-    setLoadingState(true);
-    try {
-      const newEventId = await httpFn(data);
-      if (!data.id) {
-        data.id = newEventId;
-      }
-      dispatch(reducer(data));
-      setLoadingState(false);
-      closeForm();
-    } catch (e) {
-      setLoadingState(false);
-      setHttpError(true);
-      setTimeout(() => {
-        closeForm();
-        setHttpError(false);
-      }, 4000);
-    }
-  };
+  // const httpEventHandler = async (data, httpFn, reducer, setLoadingState) => {
+  //   setLoadingState(true);
+  //   try {
+  //     const newEventId = await httpFn(data);
+  //     if (!data.id) {
+  //       data.id = newEventId;
+  //     }
+  //     dispatch(reducer(data));
+  //     setLoadingState(false);
+  //     closeForm();
+  //   } catch (e) {
+  //     setLoadingState(false);
+  //     setHttpError(true);
+  //     setTimeout(() => {
+  //       closeForm();
+  //       setHttpError(false);
+  //     }, 4000);
+  //   }
+  // };
 
   const onSubmit = async (values) => {
     const data = {
@@ -125,9 +148,9 @@ export default function FormWithFormik({
     };
     if (event?.id) {
       data.id = event.id;
-      httpEventHandler(data, updateEvent, updateReducer, setIsLoading);
+      updateEvent(data);
     } else {
-      httpEventHandler(data, createEvent, addEvent, setIsLoading);
+      createEvent(data);
     }
   };
 
@@ -139,8 +162,10 @@ export default function FormWithFormik({
     >
       <Pressable style={styles.formContainer} onPress={closeKeyboardHandler}>
         <View style={styles.headerContainer}>
-          <Text style={styles.formTitle}>Nouvel évènement</Text>
-          {isremoveLoading ? (
+          <Text style={styles.formTitle}>
+            {selectedEvent ? "Modifier l'évènement" : "Nouvel évènement"}
+          </Text>
+          {isDeleting ? (
             <ActivityIndicator color={colors.LIGHT} size="small" />
           ) : (
             <FontAwesome
@@ -228,13 +253,13 @@ export default function FormWithFormik({
                   <CustomBtn
                     text="Annuler"
                     color={colors.PINK}
-                    onPress={closeFormHandler}
+                    onPress={closeForm}
                   />
                   <CustomBtn
                     text="Valider"
                     color={colors.VIOLET}
                     onPress={handleSubmit}
-                    isLoading={isLoading}
+                    isLoading={isCreating || isUpdating}
                   />
                 </View>
                 <ErrorModal
@@ -242,8 +267,12 @@ export default function FormWithFormik({
                   closeModal={setStatus}
                   errors={errors}
                 />
-                {isLoading || isremoveLoading ? <LoadingOverlay /> : null}
-                {httpError ? <ErrorOverlay /> : null}
+                {isCreating || isUpdating || isDeleting ? (
+                  <LoadingOverlay />
+                ) : null}
+                {createError || updateError || deleteError ? (
+                  <ErrorOverlay />
+                ) : null}
               </>
             );
           }}

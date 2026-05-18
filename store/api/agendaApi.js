@@ -5,8 +5,10 @@ export const agendaApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.EXPO_PUBLIC_API_URL,
   }),
+  tagTypes: ["Events"],
   endpoints: (build) => ({
     getAllEvents: build.query({
+      providesTags: ["Events"],
       query: () => "events.json",
       transformResponse: (response) => {
         const events = [];
@@ -24,7 +26,35 @@ export const agendaApi = createApi({
       transformErrorResponse: () =>
         "Une erreur s'est produite. Veuillez ré-essayer ultérieurement",
     }),
+    createEvent: build.mutation({
+      invalidatesTags: ["Events"],
+      query: (event) => ({
+        url: "events.json",
+        method: "POST",
+        body: event,
+      }),
+    }),
+    updateEvent: build.mutation({
+      invalidatesTags: ["Events"],
+      query: ({ id, ...event }) => ({
+        url: `events/${id}.json`,
+        method: "PATCH",
+        body: event,
+      }),
+    }),
+    deleteEvent: build.mutation({
+      invalidatesTags: ["Events"],
+      query: ({ id }) => ({
+        url: `events/${id}.json`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
-export const { useGetAllEventsQuery } = agendaApi;
+export const {
+  useGetAllEventsQuery,
+  useCreateEventMutation,
+  useUpdateEventMutation,
+  useDeleteEventMutation,
+} = agendaApi;
