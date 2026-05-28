@@ -9,13 +9,13 @@ import {
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { colors } from "../../constants/colors";
-import Input from "./Input";
+import Input from "../shared/Input";
 import DateTimePicker from "./DateTimePicker";
 import { useEffect, useState } from "react";
 import IsOnline from "./IsOnline";
 import CustomBtn from "./CustomBtn";
 import { useDispatch, useSelector } from "react-redux";
-import ErrorModal from "./ErrorModal";
+import ErrorModal from "../shared/ErrorModal";
 import {
   addEvent,
   removeEvent,
